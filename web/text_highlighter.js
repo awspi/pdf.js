@@ -35,13 +35,81 @@ class TextHighlighter {
    * @param {TextHighlighterOptions} options
    */
   constructor({ findController, eventBus, pageIndex }) {
+    console.log('#TextHighlighter construct')
     this.findController = findController;
+    // 先不考虑合并
+    // this.defaultMatches=[]
     this.matches = [];
     this.eventBus = eventBus;
     this.pageIdx = pageIndex;
     this.textDivs = null;
     this.textContentItemsStr = null;
     this.enabled = false;
+    this.eventBus._on('updateChunkMatches',this._updateChunkMatches.bind(this))
+  }
+
+
+  _updateChunkMatches(chunkMatches) {
+    console.log('--> updateChunkMatches chunkMatches:%o',chunkMatches)
+    // _updateMatches
+    // _renderMatches
+    const { textContentItemsStr, textDivs } = this;
+    console.log('# textContentItemsStr:%o \n\n textDivs:%o',textContentItemsStr,textDivs)
+
+    // 清空之前的匹配结果
+    for (let i = 0, len = textDivs.length; i < len; i++) {
+      const div = textDivs[i];
+      div.textContent = textContentItemsStr[i];
+      div.className = '';
+    }
+
+    // 遍历匹配项并渲染高亮
+    for (const match of chunkMatches) {
+      const { begin, end, className,color } = match;
+
+      const { divIdx: beginDivIdx, offset: beginOffset } = begin;
+      const { divIdx: endDivIdx, offset: endOffset } = end;
+      // 生成随机颜色
+      const style=`background-color: ${color||'rgba(239,203,237,0.25)'};`
+      // 处理跨文本块的情况
+      if (beginDivIdx === endDivIdx) {
+        this._renderMatchHighlight(beginDivIdx, beginOffset, endOffset, className,style);
+      } else {
+        // begin 和 end 是border-radius
+        this._renderMatchHighlight(beginDivIdx, beginOffset, null, `${className} begin`);
+        for (let i = beginDivIdx + 1; i < endDivIdx; i++) {
+          this._renderMatchHighlight(i, 0, null, `${className} middle`,style);
+        }
+        this._renderMatchHighlight(endDivIdx, 0, endOffset, `${className} end`);
+      }
+    }
+  }
+  // fixme 渲染出问题
+  _renderMatchHighlight(divIdx, beginOffset, endOffset, className,style) {
+    const div = this.textDivs[divIdx];
+    const content = this.textContentItemsStr[divIdx];
+    console.log('#_renderMatchHighlight,content',content)
+    if(!content){
+      return
+    }
+
+    const matchDiv = document.createElement('span');
+    matchDiv.className = `highlight ${className}`;
+    matchDiv.style=style
+    console.log('style',style)
+
+    matchDiv.textContent = content.substring(beginOffset, endOffset);
+
+    const beforeDiv = document.createElement('span');
+    beforeDiv.textContent = content.substring(0, beginOffset);
+
+    const afterDiv = document.createElement('span');
+    afterDiv.textContent = content.substring(endOffset);
+
+    div.textContent = '';
+    div.appendChild(beforeDiv);
+    div.appendChild(matchDiv);
+    div.appendChild(afterDiv);
   }
 
   /**
@@ -105,6 +173,7 @@ class TextHighlighter {
       return [];
     }
     const { textContentItemsStr } = this;
+    console.log('covertMatches textContentItemsStr',textContentItemsStr)
 
     let i = 0,
       iIndex = 0;
@@ -152,6 +221,8 @@ class TextHighlighter {
   }
 
   _renderMatches(matches) {
+    console.log('#matches',matches)
+    debugger
     // Early exit if there is nothing to render.
     if (matches.length === 0) {
       return;
@@ -297,13 +368,14 @@ class TextHighlighter {
     }
 
     if (!findController?.highlightMatches || reset) {
+
       return;
     }
     // Convert the matches on the `findController` into the match format
     // used for the textLayer.
     const pageMatches = findController.pageMatches[pageIdx] || null;
     const pageMatchesLength = findController.pageMatchesLength[pageIdx] || null;
-debugger
+
     this.matches = this._convertMatches(pageMatches, pageMatchesLength);
     this._renderMatches(this.matches);
   }
