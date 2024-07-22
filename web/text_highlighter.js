@@ -303,7 +303,7 @@ class TextHighlighter {
     // used for the textLayer.
     const pageMatches = findController.pageMatches[pageIdx] || null;
     const pageMatchesLength = findController.pageMatchesLength[pageIdx] || null;
-
+debugger
     this.matches = this._convertMatches(pageMatches, pageMatchesLength);
     this._renderMatches(this.matches);
   }

@@ -699,6 +699,8 @@ class PDFFindController {
         matchesLength.push(matchLen);
       }
     }
+    console.log('#matches',matches)
+    console.log('#matchesLen',matchesLength)
   }
 
   #convertToRegExpString(query, hasDiacritics) {
