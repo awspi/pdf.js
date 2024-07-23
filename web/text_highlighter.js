@@ -46,6 +46,7 @@ class TextHighlighter {
     this.textContentItemsStr = null;
     this.enabled = false;
     this.eventBus._on('updateChunkMatches',this._updateChunkMatches.bind(this))
+    this.eventBus._on('renderMatchHighlight',this._renderMatchHighlight.bind(this))
   }
 
 
@@ -85,31 +86,124 @@ class TextHighlighter {
     }
   }
   // fixme 渲染出问题
-  _renderMatchHighlight(divIdx, beginOffset, endOffset, className,style) {
-    const div = this.textDivs[divIdx];
-    const content = this.textContentItemsStr[divIdx];
-    console.log('#_renderMatchHighlight,content',content)
-    if(!content){
-      return
+  _renderMatchHighlight(matches) {
+    // const div = this.textDivs[divIdx];
+    // const content = this.textContentItemsStr[divIdx];
+    console.log('#_renderMatchHighlight,，matches',matches)
+    if (matches.length === 0) {
+      return;
+    }
+    // const { findController, pageIdx } = this;
+    const { textContentItemsStr, textDivs } = this;
+
+    let prevEnd = null;
+    const infinity = {
+      divIdx: -1,
+      offset: undefined,
+    };
+
+    function beginText(begin, className) {
+      const divIdx = begin.divIdx;
+      console.log('#beginText',textDivs,divIdx)
+      textDivs[divIdx].textContent = "";
+      return appendTextToDiv(divIdx, 0, begin.offset, className);
     }
 
-    const matchDiv = document.createElement('span');
-    matchDiv.className = `highlight ${className}`;
-    matchDiv.style=style
-    console.log('style',style)
+    function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
+      let div = textDivs[divIdx];
+      if (div.nodeType === Node.TEXT_NODE) {
+        const span = document.createElement("span");
+        div.before(span);
+        span.append(div);
+        textDivs[divIdx] = span;
+        div = span;
+      }
+      const content = textContentItemsStr[divIdx].substring(
+        fromOffset,
+        toOffset
+      );
+      const node = document.createTextNode(content);
+      if (className) {
+        const span = document.createElement("span");
+        span.className = `${className} appended`;
+        span.append(node);
+        div.append(span);
+        return className.includes("selected") ? span.offsetLeft : 0;
+      }
+      div.append(node);
+      return 0;
+    }
 
-    matchDiv.textContent = content.substring(beginOffset, endOffset);
+    let i0 = 0;
+    let i1 = matches.length;
 
-    const beforeDiv = document.createElement('span');
-    beforeDiv.textContent = content.substring(0, beginOffset);
+    let lastDivIdx = -1;
+    let lastOffset = -1;
+    for (let i = i0; i < i1; i++) {
+      const match = matches[i];
+      const begin = match.begin;
+      if (begin.divIdx === lastDivIdx && begin.offset === lastOffset) {
+        // It's possible to be in this situation if we searched for a 'f' and we
+        // have a ligature 'ff' in the text. The 'ff' has to be highlighted two
+        // times.
+        continue;
+      }
+      lastDivIdx = begin.divIdx;
+      lastOffset = begin.offset;
 
-    const afterDiv = document.createElement('span');
-    afterDiv.textContent = content.substring(endOffset);
+      const end = match.end;
+      // const isSelected = isSelectedPage && i === selectedMatchIdx;
+      // const highlightSuffix = isSelected ? " selected" : "";
+      const highlightSuffix=''
+      let selectedLeft = 0;
 
-    div.textContent = '';
-    div.appendChild(beforeDiv);
-    div.appendChild(matchDiv);
-    div.appendChild(afterDiv);
+      // Match inside new div.
+      if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
+        // If there was a previous div, then add the text at the end.
+        if (prevEnd !== null) {
+          appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+        }
+        // Clear the divs and set the content until the starting point.
+        beginText(begin);
+      } else {
+        appendTextToDiv(prevEnd.divIdx, prevEnd.offset, begin.offset);
+      }
+
+      if (begin.divIdx === end.divIdx) {
+        selectedLeft = appendTextToDiv(
+          begin.divIdx,
+          begin.offset,
+          end.offset,
+          "highlight" + highlightSuffix
+        );
+      } else {
+        selectedLeft = appendTextToDiv(
+          begin.divIdx,
+          begin.offset,
+          infinity.offset,
+          "highlight begin" + highlightSuffix
+        );
+        for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
+          textDivs[n0].className = "highlight middle" + highlightSuffix;
+        }
+        beginText(end, "highlight end" + highlightSuffix);
+      }
+      prevEnd = end;
+
+      // if (isSelected) {
+      //   // Attempt to scroll the selected match into view.
+      //   findController.scrollMatchIntoView({
+      //     element: textDivs[begin.divIdx],
+      //     selectedLeft,
+      //     pageIndex: pageIdx,
+      //     matchIndex: selectedMatchIdx,
+      //   });
+      // }
+    }
+
+    if (prevEnd) {
+      appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+    }
   }
 
   /**
@@ -242,6 +336,7 @@ class TextHighlighter {
     function beginText(begin, className) {
       const divIdx = begin.divIdx;
       textDivs[divIdx].textContent = "";
+      console.log('# render beginText',textDivs,divIdx)
       return appendTextToDiv(divIdx, 0, begin.offset, className);
     }
 
