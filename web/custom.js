@@ -285,41 +285,50 @@ export const setupCustomCapabilities =()=>{
     manager.hook.postInitialize=(editor)=>{
       editorManager.createEditorParameters(editor);
     }
+    //
+    //
+    // const params =
+    //   [
+    //     {
+    //       "pageIndex": 0,
+    //       "id": "pdfjs_internal_editor_0",
+    //       "x": 0.5101168529971456,
+    //       "y": 0.14989098837209303,
+    //       "width": 0.21895436979785968,
+    //       "height": 0.13622559037238874,
+    //       "name": "boxCheckEditor"
+    //     }, {
+    //       "pageIndex": 0,
+    //       "id": "pdfjs_internal_editor_1",
+    //       "x": 0.19494083016175073,
+    //       "y": 0.32703488372093026,
+    //       "width": 0.0927467300832342,
+    //       "height": 0.17892824704813806,
+    //       "name": "boxCheckEditor"
+    //     }, {
+    //       "pageIndex": 0,
+    //       "id": "pdfjs_internal_editor_2",
+    //       "x": 0.7908019148430067,
+    //       "y": 0.36882267441860467,
+    //       "width": 0.12009512485136742,
+    //       "height": 0.12352406902815623,
+    //       "name": "boxCheckEditor"
+    //     }
+    //   ]
+    // // 保存到editorManager里面去
+    // editorManager.initEditorParameters(params, manager);
+    // controller.renderPreparedLayerAnnotations(editorManager.map);
+  })
+  evBus.on('renderMatchBoxCheck',function (params){
+    const properties = getApplication().pdfViewer._layerProperties;
+    const manager = properties.annotationEditorUIManager;
 
-
-    const params =
-      [
-        {
-          "pageIndex": 0,
-          "id": "pdfjs_internal_editor_0",
-          "x": 0.5101168529971456,
-          "y": 0.14989098837209303,
-          "width": 0.21895436979785968,
-          "height": 0.13622559037238874,
-          "name": "boxCheckEditor"
-        }, {
-          "pageIndex": 0,
-          "id": "pdfjs_internal_editor_1",
-          "x": 0.19494083016175073,
-          "y": 0.32703488372093026,
-          "width": 0.0927467300832342,
-          "height": 0.17892824704813806,
-          "name": "boxCheckEditor"
-        }, {
-          "pageIndex": 0,
-          "id": "pdfjs_internal_editor_2",
-          "x": 0.7908019148430067,
-          "y": 0.36882267441860467,
-          "width": 0.12009512485136742,
-          "height": 0.12352406902815623,
-          "name": "boxCheckEditor"
-        }
-      ]
     // 保存到editorManager里面去
     editorManager.initEditorParameters(params, manager);
     controller.renderPreparedLayerAnnotations(editorManager.map);
   })
   evBus._on('annotationeditorlayerrendered',function (e){
+    console.log('#annotationeditorlayerrendered',)
     // 这个代码只执行一次
     if (!afterDocumentLoadedExecuted) {
       afterDocumentLoadedExecuted = true;
