@@ -529,14 +529,28 @@ class AnnotationEditorLayer {
     if (!editor.isAttachedToDOM) {
       const div = editor.render();
       this.div.append(div);
+      if (editor.postAttach) {
+        editor.postAttach();
+      }
       editor.isAttachedToDOM = true;
     }
+
 
     // The editor will be correctly moved into the DOM (see fixAndSetPosition).
     editor.fixAndSetPosition();
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
     editor._reportTelemetry(editor.telemetryInitialData);
+
+    // 通过api初始化加入的注解，不会展示，这里刷一下
+    this.show();
+  }
+
+  show(){
+    if (!this.div || this.isEmpty) {
+      return;
+    }
+    this.div.hidden = false;
   }
 
   moveEditorInDOM(editor) {

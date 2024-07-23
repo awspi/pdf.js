@@ -253,6 +253,7 @@ class BoxCheckEditor extends AnnotationEditor {
   }
 
   postAttach(){
+    console.log('#postAttach')
     this.adaptSize();
   }
 

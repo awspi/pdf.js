@@ -285,9 +285,6 @@ export const setupCustomCapabilities =()=>{
     manager.hook.postInitialize=(editor)=>{
       editorManager.createEditorParameters(editor);
     }
-    window.ok=(editor)=>{
-      editorManager.createEditorParameters(editor);
-    }
 
 
     const params =
