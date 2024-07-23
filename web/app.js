@@ -85,6 +85,7 @@ import { Preferences } from "web-preferences";
 import { SecondaryToolbar } from "web-secondary_toolbar";
 import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
+import {setupCustomCapabilities} from "./custom.js";
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 
@@ -403,6 +404,8 @@ const PDFViewerApplication = {
       eventBus = new EventBus();
     }
     this.eventBus = eventBus;
+
+    setupCustomCapabilities()
 
     this.overlayManager = new OverlayManager();
 
