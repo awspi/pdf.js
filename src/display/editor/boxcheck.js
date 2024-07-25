@@ -12,6 +12,8 @@ import { getLeftTopCoord, KeyboardManager } from "./tools.js";
  */
 
 class BoxCheckEditor extends AnnotationEditor {
+  backgroundColors=["rgba(223,231,255,0.25)","rgba(255,229,206,0.25)"];
+
   #editorDivId = `${this.id}-editor`;
 
   static _freeTextDefaultContent = "";
@@ -273,13 +275,17 @@ class BoxCheckEditor extends AnnotationEditor {
   }
 
   adaptSize() {
+
     const pWidth = this.div.parentNode.style.width;
     const pHeight = this.div.parentNode.style.height;
-    // hack式写法，说实话不太好，但是此处也好改
     const sWidth = pWidth.replace("calc(", "calc(" + this.width + "*");
     const sHeight = pHeight.replace("calc(", "calc(" + this.height + "*");
     this.div.style.height = sHeight;
     this.div.style.width = sWidth;
+    //背景色
+    const id = this.id.split('pdfjs_internal_editor_')[1]
+    this.div.style.backgroundColor=this.backgroundColors[id % this.backgroundColors.length]
+    console.log('#adapt',this.backgroundColors,id)
   }
 
   /** @inheritdoc */
