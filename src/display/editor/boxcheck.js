@@ -12,7 +12,7 @@ import { getLeftTopCoord, KeyboardManager } from "./tools.js";
  */
 
 class BoxCheckEditor extends AnnotationEditor {
-  backgroundColors=["rgba(223,231,255,0.25)","rgba(255,229,206,0.25)"];
+  backgroundColors=["rgba(223,231,255,0.5)","rgba(255,229,206,0.5)"];
 
   #editorDivId = `${this.id}-editor`;
 
