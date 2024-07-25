@@ -1,3 +1,5 @@
+import {getUIManager} from "./utils.js";
+
 export class EditorManager {
 
   map = new Map();
