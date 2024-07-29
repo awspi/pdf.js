@@ -30,6 +30,7 @@ import { HighlightEditor } from "./highlight.js";
 import { InkEditor } from "./ink.js";
 import { setLayerDimensions } from "../display_utils.js";
 import { StampEditor } from "./stamp.js";
+import {BoxCheckEditor} from "./boxcheck.js";
 
 /**
  * @typedef {Object} AnnotationEditorLayerOptions
@@ -55,6 +56,9 @@ import { StampEditor } from "./stamp.js";
  * Manage all the different editors on a page.
  */
 class AnnotationEditorLayer {
+
+  #pointerDownEditor = null;
+
   #accessibilityManager;
 
   #allowClick = false;
@@ -84,7 +88,7 @@ class AnnotationEditorLayer {
   static _initialized = false;
 
   static #editorTypes = new Map(
-    [FreeTextEditor, InkEditor, StampEditor, HighlightEditor].map(type => [
+    [FreeTextEditor, InkEditor, StampEditor, HighlightEditor,BoxCheckEditor].map(type => [
       type._editorType,
       type,
     ])
@@ -525,14 +529,28 @@ class AnnotationEditorLayer {
     if (!editor.isAttachedToDOM) {
       const div = editor.render();
       this.div.append(div);
+      if (editor.postAttach) {
+        editor.postAttach();
+      }
       editor.isAttachedToDOM = true;
     }
+
 
     // The editor will be correctly moved into the DOM (see fixAndSetPosition).
     editor.fixAndSetPosition();
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
     editor._reportTelemetry(editor.telemetryInitialData);
+
+    // 通过api初始化加入的注解，不会展示，这里刷一下
+    this.show();
+  }
+
+  show(){
+    if (!this.div || this.isEmpty) {
+      return;
+    }
+    this.div.hidden = false;
   }
 
   moveEditorInDOM(editor) {
@@ -752,13 +770,22 @@ class AnnotationEditorLayer {
    * @param {PointerEvent} event
    */
   pointerup(event) {
+    console.log('#pointerup');
+    const currEditor = this.#pointerDownEditor;
+    this.#pointerDownEditor = null;
     const { isMac } = FeatureTest.platform;
+    // 此处针对性的修改了一下
+    // 原来条件是 (event.button !== 0 || (event.ctrlKey && isMac))
     if (event.button !== 0 || (event.ctrlKey && isMac)) {
       // Don't create an editor on right click.
       return;
     }
 
-    if (event.target !== this.div) {
+    // 模式不是boxcheck的时候才要判断这个
+    if (
+      this.#uiManager.getMode() !== AnnotationEditorType.BOXCHECK &&
+      event.target !== this.div
+    ) {
       return;
     }
 
@@ -781,7 +808,17 @@ class AnnotationEditorLayer {
       return;
     }
 
-    this.createAndAddNewEditor(event, /* isCentered = */ false);
+    if (this.#uiManager.getMode() !== AnnotationEditorType.BOXCHECK) {
+      this.createAndAddNewEditor(event, /* isCentered = */ false);
+    }
+
+    if (
+      this.#uiManager.getMode() === AnnotationEditorType.BOXCHECK &&
+      currEditor
+    ) {
+      currEditor.postConfirm();
+      this.#uiManager.hook.postInitialize(currEditor);
+    }
   }
 
   /**

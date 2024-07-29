@@ -1055,7 +1055,7 @@ class AnnotationEditor {
     this.translate(tx, ty);
 
     bindEvents(this, this.div, ["pointerdown"]);
-
+    console.log('#render super create div',this.div);
     return this.div;
   }
 
@@ -1787,6 +1787,8 @@ class FakeEditor extends AnnotationEditor {
       pageIndex: this.pageIndex,
     };
   }
+
+  postConfirm() {}
 }
 
 export { AnnotationEditor };
