@@ -2,7 +2,7 @@ import {
   AnnotationEditorType,
   assert,
   LINE_FACTOR,
-  shadow
+  shadow,
 } from "../../shared/util.js";
 import { AnnotationEditor } from "./editor.js";
 import { getLeftTopCoord, KeyboardManager } from "./tools.js";
@@ -12,7 +12,7 @@ import { getLeftTopCoord, KeyboardManager } from "./tools.js";
  */
 
 class BoxCheckEditor extends AnnotationEditor {
-  backgroundColors=["rgba(223,231,255,0.5)","rgba(255,229,206,0.5)"];
+  backgroundColors = ["rgba(223,231,255,0.5)", "rgba(255,229,206,0.5)"];
 
   #editorDivId = `${this.id}-editor`;
 
@@ -42,8 +42,7 @@ class BoxCheckEditor extends AnnotationEditor {
       this.y = params.y;
       this.width = params.width;
       this.height = params.height;
-      console.log('#fromCommand',params)
-
+      console.log("#fromCommand", params);
     } else {
       this.sourceX = params.x;
       this.sourceY = params.y;
@@ -52,7 +51,7 @@ class BoxCheckEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   static initialize(l10n) {
-    console.log('#initialize',l10n)
+    console.log("#initialize", l10n);
     AnnotationEditor.initialize(l10n);
     const style = getComputedStyle(document.documentElement);
 
@@ -86,8 +85,7 @@ class BoxCheckEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   get propertiesToUpdate() {
-    return [
-    ];
+    return [];
   }
 
   /**
@@ -208,7 +206,7 @@ class BoxCheckEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   render() {
-    console.log('#render box,this.div:%o',this.div)
+    console.log("#render box,this.div:%o", this.div);
     if (this.div) {
       return this.div;
     }
@@ -225,12 +223,12 @@ class BoxCheckEditor extends AnnotationEditor {
   }
 
   select() {
-    this.div.classList.add("noBorderBoxCheckEditor")
+    this.div.classList.add("noBorderBoxCheckEditor");
     super.select();
   }
 
-  unselect(){
-    this.div.classList.remove("noBorderBoxCheckEditor")
+  unselect() {
+    this.div.classList.remove("noBorderBoxCheckEditor");
     super.unselect();
   }
 
@@ -254,8 +252,8 @@ class BoxCheckEditor extends AnnotationEditor {
     this.div.style.height = height + "px";
   }
 
-  postAttach(){
-    console.log('#postAttach')
+  postAttach() {
+    console.log("#postAttach");
     this.adaptSize();
   }
 
@@ -275,17 +273,25 @@ class BoxCheckEditor extends AnnotationEditor {
   }
 
   adaptSize() {
-
     const pWidth = this.div.parentNode.style.width;
     const pHeight = this.div.parentNode.style.height;
-    const sWidth = pWidth.replace("calc(", "calc(" + this.width + "*");
+
     const sHeight = pHeight.replace("calc(", "calc(" + this.height + "*");
+    const sWidth = pWidth.replace("calc(", "calc(" + this.width + "*");
     this.div.style.height = sHeight;
     this.div.style.width = sWidth;
-    //背景色
-    const id = this.id.split('pdfjs_internal_editor_')[1]
-    this.div.style.backgroundColor=this.backgroundColors[id % this.backgroundColors.length]
-    console.log('#adapt',this.backgroundColors,id)
+    // 背景色
+    const id = this.id.split("pdfjs_internal_editor_")[1];
+    const bgc = this.backgroundColors[id % this.backgroundColors.length];
+    this.div.style.backgroundColor = bgc;
+    console.log(
+      "#adaptSize pW:%s,pH:%s\nsHeight:%s,sWidth:%s\nbgc:%s",
+      pWidth,
+      pHeight,
+      sHeight,
+      sWidth,
+      bgc
+    );
   }
 
   /** @inheritdoc */
