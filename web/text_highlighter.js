@@ -35,13 +35,175 @@ class TextHighlighter {
    * @param {TextHighlighterOptions} options
    */
   constructor({ findController, eventBus, pageIndex }) {
+    console.log('#TextHighlighter construct')
     this.findController = findController;
+    // 先不考虑合并
+    // this.defaultMatches=[]
     this.matches = [];
     this.eventBus = eventBus;
     this.pageIdx = pageIndex;
     this.textDivs = null;
     this.textContentItemsStr = null;
     this.enabled = false;
+    this.eventBus._on('updateChunkMatches',this._updateChunkMatches.bind(this))
+    this.eventBus._on('renderMatchHighlight',this._renderMatchHighlight.bind(this))
+  }
+
+
+  _updateChunkMatches(chunkMatches) {
+    console.log('--> updateChunkMatches chunkMatches:%o',chunkMatches)
+    // _updateMatches
+    // _renderMatches
+    const { textContentItemsStr, textDivs } = this;
+    console.log('# textContentItemsStr:%o \n\n textDivs:%o',textContentItemsStr,textDivs)
+
+    // 清空之前的匹配结果
+    for (let i = 0, len = textDivs.length; i < len; i++) {
+      const div = textDivs[i];
+      div.textContent = textContentItemsStr[i];
+      div.className = '';
+    }
+
+    // 遍历匹配项并渲染高亮
+    for (const match of chunkMatches) {
+      const { begin, end, className,color } = match;
+
+      const { divIdx: beginDivIdx, offset: beginOffset } = begin;
+      const { divIdx: endDivIdx, offset: endOffset } = end;
+      // 生成随机颜色
+      const style=`background-color: ${color||'rgba(239,203,237,0.25)'};`
+      // 处理跨文本块的情况
+      if (beginDivIdx === endDivIdx) {
+        this._renderMatchHighlight(beginDivIdx, beginOffset, endOffset, className,style);
+      } else {
+        // begin 和 end 是border-radius
+        this._renderMatchHighlight(beginDivIdx, beginOffset, null, `${className} begin`);
+        for (let i = beginDivIdx + 1; i < endDivIdx; i++) {
+          this._renderMatchHighlight(i, 0, null, `${className} middle`,style);
+        }
+        this._renderMatchHighlight(endDivIdx, 0, endOffset, `${className} end`);
+      }
+    }
+  }
+  // fixme 渲染出问题
+  _renderMatchHighlight(matches) {
+    // const div = this.textDivs[divIdx];
+    // const content = this.textContentItemsStr[divIdx];
+    console.log('#_renderMatchHighlight,，matches',matches)
+    if (matches.length === 0) {
+      return;
+    }
+    // const { findController, pageIdx } = this;
+    const { textContentItemsStr, textDivs } = this;
+
+    let prevEnd = null;
+    const infinity = {
+      divIdx: -1,
+      offset: undefined,
+    };
+
+    function beginText(begin, className) {
+      const divIdx = begin.divIdx;
+      console.log('#beginText',textDivs,divIdx)
+      textDivs[divIdx].textContent = "";
+      return appendTextToDiv(divIdx, 0, begin.offset, className);
+    }
+
+    function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
+      let div = textDivs[divIdx];
+      if (div.nodeType === Node.TEXT_NODE) {
+        const span = document.createElement("span");
+        div.before(span);
+        span.append(div);
+        textDivs[divIdx] = span;
+        div = span;
+      }
+      const content = textContentItemsStr[divIdx].substring(
+        fromOffset,
+        toOffset
+      );
+      const node = document.createTextNode(content);
+      if (className) {
+        const span = document.createElement("span");
+        span.className = `${className} appended`;
+        span.append(node);
+        div.append(span);
+        return className.includes("selected") ? span.offsetLeft : 0;
+      }
+      div.append(node);
+      return 0;
+    }
+
+    let i0 = 0;
+    let i1 = matches.length;
+
+    let lastDivIdx = -1;
+    let lastOffset = -1;
+    for (let i = i0; i < i1; i++) {
+      const match = matches[i];
+      const begin = match.begin;
+      if (begin.divIdx === lastDivIdx && begin.offset === lastOffset) {
+        // It's possible to be in this situation if we searched for a 'f' and we
+        // have a ligature 'ff' in the text. The 'ff' has to be highlighted two
+        // times.
+        continue;
+      }
+      lastDivIdx = begin.divIdx;
+      lastOffset = begin.offset;
+
+      const end = match.end;
+      // const isSelected = isSelectedPage && i === selectedMatchIdx;
+      // const highlightSuffix = isSelected ? " selected" : "";
+      const highlightSuffix=''
+      let selectedLeft = 0;
+
+      // Match inside new div.
+      if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
+        // If there was a previous div, then add the text at the end.
+        if (prevEnd !== null) {
+          appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+        }
+        // Clear the divs and set the content until the starting point.
+        beginText(begin);
+      } else {
+        appendTextToDiv(prevEnd.divIdx, prevEnd.offset, begin.offset);
+      }
+
+      if (begin.divIdx === end.divIdx) {
+        selectedLeft = appendTextToDiv(
+          begin.divIdx,
+          begin.offset,
+          end.offset,
+          "highlight" + highlightSuffix
+        );
+      } else {
+        selectedLeft = appendTextToDiv(
+          begin.divIdx,
+          begin.offset,
+          infinity.offset,
+          "highlight begin" + highlightSuffix
+        );
+        for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
+          textDivs[n0].className = "highlight middle" + highlightSuffix;
+        }
+        beginText(end, "highlight end" + highlightSuffix);
+      }
+      prevEnd = end;
+
+      // if (isSelected) {
+      //   // Attempt to scroll the selected match into view.
+      //   findController.scrollMatchIntoView({
+      //     element: textDivs[begin.divIdx],
+      //     selectedLeft,
+      //     pageIndex: pageIdx,
+      //     matchIndex: selectedMatchIdx,
+      //   });
+      // }
+    }
+
+    if (prevEnd) {
+      appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+    }
   }
 
   /**
@@ -105,6 +267,7 @@ class TextHighlighter {
       return [];
     }
     const { textContentItemsStr } = this;
+    console.log('covertMatches textContentItemsStr',textContentItemsStr)
 
     let i = 0,
       iIndex = 0;
@@ -152,6 +315,8 @@ class TextHighlighter {
   }
 
   _renderMatches(matches) {
+    console.log('#matches',matches)
+    debugger
     // Early exit if there is nothing to render.
     if (matches.length === 0) {
       return;
@@ -171,6 +336,7 @@ class TextHighlighter {
     function beginText(begin, className) {
       const divIdx = begin.divIdx;
       textDivs[divIdx].textContent = "";
+      console.log('# render beginText',textDivs,divIdx)
       return appendTextToDiv(divIdx, 0, begin.offset, className);
     }
 
@@ -297,6 +463,7 @@ class TextHighlighter {
     }
 
     if (!findController?.highlightMatches || reset) {
+
       return;
     }
     // Convert the matches on the `findController` into the match format
